@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "web-scraper"
+version = "3.12.1"
+description = "web scraper to help check if an item is in stock on a website."
+authors = ["Uhan19"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.32.3"
+beautifulsoup4 = "^4.12.3"
+selenium = "^4.21.0"
+webdriver-manager = "^4.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
