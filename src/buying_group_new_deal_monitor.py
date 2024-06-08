@@ -1,8 +1,11 @@
 import os
 import time
 import hashlib
+import smtplib
 from dotenv import load_dotenv
 from selenium import webdriver
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
@@ -19,10 +22,29 @@ LOGIN_URL = "https://www.buyinggroup.com/login"
 DEALS_URL = "https://buyinggroup.com/deals/active"
 USERNAME = os.getenv("BUYING_GROUP_USERNAME")
 PASSWORD = os.getenv("BUYING_GROUP_PASSWORD")
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 SCREENSHOT_PATH = "/Users/yuehanduan/Documents/screenshot/scraper_screenshots/buying_group_deals"
 
 # Ensure the screenshot directory exists
 os.makedirs(SCREENSHOT_PATH, exist_ok=True)
+
+def send_email(deal):
+  msg = MIMEMultipart()
+  msg['From'] = EMAIL_ADDRESS
+  msg['To'] = EMAIL_ADDRESS
+  msg['Subject'] = f"New deal post at buyinggroup.com!"
+
+  body = f"New deal found: {deal['description']} at {deal['price']}"
+  msg.attach(MIMEText(body, 'plain'))
+
+  server = smtplib.SMTP('smtp.gmail.com', 587)
+  server.starttls()
+  server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+  text = msg.as_string()
+  server.sendmail(EMAIL_ADDRESS, EMAIL_ADDRESS, text)
+  server.quit()
+  print("Email sent successfully.")
 
 def login(driver):
   driver.get(LOGIN_URL)
@@ -52,7 +74,7 @@ def get_deals(driver):
   WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#deals-list > div:nth-child(2) > div")))
   time.sleep(5) # Wait for the page to fully load
 
-  deal_elements = driver.find_elements(By.ID, "deal-card-container") [:4] # Limit to first 4 items
+  deal_elements = driver.find_elements(By.ID, "deal-card-container") [:10] # Limit to first 4 items
   print(f"Found {len(deal_elements)} deal elements.")
 
   deals = []
@@ -94,7 +116,8 @@ def monitor_deals():
           screenshot_filename = os.path.join(SCREENSHOT_PATH, f"deal_{deal['id']}.png")
           capture_screenshot(driver, deal['element'], screenshot_filename)
           print(f"New deal found {deal['description']} at {deal['price']}. Screenshot saved to {screenshot_filename}")
-          # TODO: send SMS or email notification
+          # TODO: send SMS notification
+          send_email(deal)
 
       existing_deals = current_deals
       time.sleep(60) # Check every minute
