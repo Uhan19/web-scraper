@@ -75,28 +75,31 @@ def get_deals(driver):
 def capture_screenshot(driver, deal_element, filename):
   deal_element.screenshot(filename)
 
-# def monitor_deals():
-#   options = Options()
-#   options.headless = True
-#   driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-
-#   try:
-#     login(driver)
-#     existing_deals = set()
-
-#     while True:
-#       deals = get_deals(driver)
-#       current_deals = set(deal[])
-
-if __name__ == "__main__":
+def monitor_deals():
   options = Options()
   options.headless = True
   driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
-  login(driver)
-  deals = get_deals(driver)
+  try:
+    login(driver)
+    existing_deals = set()
 
-  for deal in deals:
-    deal['element'].screenshot(f"{SCREENSHOT_PATH}/{deal['description'].replace(' ', '_')}.png")
+    while True:
+      deals = get_deals(driver)
+      current_deals = set(deal['id'] for deal in deals)
 
-  driver.quit()
+      new_deals = current_deals - existing_deals
+      if new_deals:
+        for deal in deals:
+          screenshot_filename = os.path.join(SCREENSHOT_PATH, f"deal_{deal['id']}.png")
+          capture_screenshot(driver, deal['element'], screenshot_filename)
+          print(f"New deal found {deal['description']} at {deal['price']}. Screenshot saved to {screenshot_filename}")
+          # TODO: send SMS or email notification
+
+      existing_deals = current_deals
+      time.sleep(60) # Check every minute
+  finally:
+    driver.quit()
+
+if __name__ == "__main__":
+  monitor_deals()
